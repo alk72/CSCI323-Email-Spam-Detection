@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Datasets are downloaded by `python main.py download`; don't commit them
+data/raw/
+data/processed/
+
+# Generated results (re-create with `python main.py all`)
+results/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
