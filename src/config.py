@@ -9,12 +9,11 @@ RANDOM_STATE = 42
 TEST_SIZE = 0.2
 CV_FOLDS = 10
 
-# same as the paper
 MAX_FEATURES = 9000
 MIN_DF = 3
 
 NB_ALPHA = 1.0
-SVM_C = 1.0  # paper uses 1000
+SVM_C = 1.0
 
 DATASETS = ["spamassassin", "enron", "sms"]
 MODELS = ["nb", "svm"]
