@@ -20,7 +20,6 @@ class NpDistilBert:
         # and takes len(ids) as the real length, so pre-padded ids would be attended to
         self.tok.no_padding()
         self.tok.enable_truncation(max_len)
-        self.tok.no_padding()  # tokenizer.json pads to the batch; padding would count as real tokens
         self.max_len = max_len
 
     def _lin(self, x, name):
