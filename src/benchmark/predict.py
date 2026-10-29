@@ -23,15 +23,18 @@ def load_predictor(model, holdout):
 
     import torch
     from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+    from .train_distilbert import pick_device
+    device = pick_device()
     path = os.path.join(run, "best_model")
     tok = AutoTokenizer.from_pretrained(path)
-    net = AutoModelForSequenceClassification.from_pretrained(path).eval()
+    net = AutoModelForSequenceClassification.from_pretrained(path).to(device).eval()
     max_len = distilbert_max_len(path)
 
     @torch.no_grad()
     def f(texts):
-        enc = tok(texts, truncation=True, max_length=max_len, padding=True, return_tensors="pt")
-        return torch.softmax(net(**enc).logits, dim=-1)[:, 1].numpy()
+        enc = tok(texts, truncation=True, max_length=max_len, padding=True, return_tensors="pt").to(device)
+        return torch.softmax(net(**enc).logits.float(), dim=-1)[:, 1].cpu().numpy()
     return f
 
 

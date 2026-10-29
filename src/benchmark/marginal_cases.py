@@ -68,17 +68,21 @@ def load_distilbert():
                              f"or, for the NumPy fallback, safetensors + tokenizers ({e})")
         return NpDistilBert(DISTILBERT_DIR, max_len).logit
 
+    from .train_distilbert import pick_device
+    device = pick_device()
+    print(f"DistilBERT scoring on {device}")
     tok = AutoTokenizer.from_pretrained(DISTILBERT_DIR)
-    net = AutoModelForSequenceClassification.from_pretrained(DISTILBERT_DIR).eval()
+    net = AutoModelForSequenceClassification.from_pretrained(DISTILBERT_DIR).to(device).eval()
 
     @torch.no_grad()
     def db_logit(t, batch=32):
         out = []
         t = list(t)
         for s in range(0, len(t), batch):
-            lg = net(**tok(t[s:s + batch], truncation=True, max_length=max_len, padding=True,
-                           return_tensors="pt")).logits
-            out.append((lg[:, 1] - lg[:, 0]).numpy())
+            enc = tok(t[s:s + batch], truncation=True, max_length=max_len, padding=True,
+                      return_tensors="pt").to(device)
+            lg = net(**enc).logits.float()
+            out.append((lg[:, 1] - lg[:, 0]).cpu().numpy())
         return np.concatenate(out)
     return db_logit
 
