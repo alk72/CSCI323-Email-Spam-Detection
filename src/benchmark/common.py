@@ -11,12 +11,12 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import (accuracy_score, confusion_matrix, f1_score,
                              precision_score, recall_score, roc_auc_score)
 
-ROOT = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(ROOT, "data")
-DATA_CSV = os.path.join(DATA_DIR, "spam_all.csv")
-OUT_DIR = os.path.join(ROOT, "outputs")
-SOURCES = ["sms", "enron", "spamassassin"]
-SEED = 42
+from ..config import DATA_PROCESSED, DATASETS, RANDOM_STATE, RESULTS
+
+DATA_CSV = os.path.join(DATA_PROCESSED, "spam_all.csv")
+OUT_DIR = os.path.join(RESULTS, "benchmark")
+SOURCES = DATASETS
+SEED = RANDOM_STATE
 MAX_CHARS = 3000  # long emails are cut; the start of a message carries most signal
 
 _TAG_RE = re.compile(r"<[^>]+>")
@@ -69,7 +69,7 @@ class TfidfFeatures:
 
 def load_data(path=DATA_CSV):
     if not os.path.exists(path):
-        raise SystemExit(f"{path} not found - run `python download_data.py` first")
+        raise SystemExit(f"{path} not found - run `python -m src.benchmark.prepare_data` first")
     df = pd.read_csv(path, keep_default_na=False)
     return df
 

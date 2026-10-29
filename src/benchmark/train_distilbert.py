@@ -1,9 +1,9 @@
 """
 Model 2: fine-tuned DistilBERT (Sanh et al., 2019).
 
-    python train_distilbert.py                          # all 3 datasets, in-domain test
-    python train_distilbert.py --holdout sms            # cross-dataset generalisation test
-    python train_distilbert.py --max-train 6000         # faster run on a laptop
+    python -m src.benchmark.train_distilbert                          # all 3 datasets, in-domain test
+    python -m src.benchmark.train_distilbert --holdout sms            # cross-dataset generalisation test
+    python -m src.benchmark.train_distilbert --max-train 6000         # faster run on a laptop
 
 DistilBERT is a 6-layer transformer distilled from BERT, pretrained on English
 Wikipedia + BookCorpus. We add a classification head on the [CLS] token and
@@ -33,7 +33,7 @@ from torch.utils.data import DataLoader, WeightedRandomSampler
 from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
                           get_linear_schedule_with_warmup)
 
-from common import (OUT_DIR, SEED, compute_metrics, evaluate_by_source, load_data,
+from .common import (OUT_DIR, SEED, SOURCES, compute_metrics, evaluate_by_source, load_data,
                     make_splits, print_results, run_name, save_json,
                     source_balanced_probs, val_score)
 
@@ -92,7 +92,7 @@ def predict(model, loader, device):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--holdout", choices=["sms", "enron", "spamassassin"], default=None)
+    ap.add_argument("--holdout", choices=SOURCES, default=None)
     ap.add_argument("--model", default="distilbert-base-uncased")
     ap.add_argument("--epochs", type=int, default=3)
     ap.add_argument("--lr", type=float, default=2e-5)

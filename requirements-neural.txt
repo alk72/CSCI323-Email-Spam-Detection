@@ -1,0 +1,4 @@
+# Extra packages for DistilBERT (src/benchmark/train_distilbert.py and predict.py --model distilbert)
+-r requirements.txt
+torch>=2.1
+transformers>=4.40

@@ -1,15 +1,15 @@
 """
 Classify your own messages with a trained model (handy for the demo).
 
-    python predict.py --model mlp "WINNER!! Claim your free prize now"
-    python predict.py --model distilbert "Hi, are we still meeting at 3?"
-    python predict.py --model mlp            # interactive: type messages, empty line quits
+    python -m src.benchmark.predict --model mlp "WINNER!! Claim your free prize now"
+    python -m src.benchmark.predict --model distilbert "Hi, are we still meeting at 3?"
+    python -m src.benchmark.predict --model mlp            # interactive: type messages, empty line quits
 """
 import argparse
 import os
 import sys
 
-from common import OUT_DIR, clean_text, run_name
+from .common import OUT_DIR, clean_text, run_name
 
 
 def load_predictor(model, holdout):

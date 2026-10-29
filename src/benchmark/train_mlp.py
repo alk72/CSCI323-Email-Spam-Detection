@@ -1,9 +1,9 @@
 """
 Model 1: TF-IDF features + Multi-Layer Perceptron (MLP).
 
-    python train_mlp.py                       # train on all 3 datasets, test in-domain
-    python train_mlp.py --holdout sms         # cross-dataset: never sees SMS during training
-    python train_mlp.py --tune                # small hyper-parameter search on the validation set
+    python -m src.benchmark.train_mlp                       # train on all 3 datasets, test in-domain
+    python -m src.benchmark.train_mlp --holdout sms         # cross-dataset: never sees SMS during training
+    python -m src.benchmark.train_mlp --tune                # small hyper-parameter search on the validation set
 
 Pipeline
   text -> TF-IDF (word 1-2 grams + character 3-5 grams) -> MLP (ReLU hidden layer(s),
@@ -26,7 +26,7 @@ import numpy as np
 import pandas as pd
 from sklearn.neural_network import MLPClassifier
 
-from common import (OUT_DIR, SEED, TfidfFeatures, evaluate_by_source, load_data,
+from .common import (OUT_DIR, SEED, SOURCES, TfidfFeatures, evaluate_by_source, load_data,
                     make_splits, print_results, run_name, save_json,
                     source_balanced_probs, val_score)
 
@@ -63,7 +63,7 @@ def train_mlp(X_tr, y_tr, X_va, y_va, src_va, hidden, alpha, lr, max_epochs, pat
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--holdout", choices=["sms", "enron", "spamassassin"], default=None)
+    ap.add_argument("--holdout", choices=SOURCES, default=None)
     ap.add_argument("--hidden", type=int, nargs="+", default=[128], help="hidden layer sizes")
     ap.add_argument("--alpha", type=float, default=1e-4, help="L2 penalty")
     ap.add_argument("--lr", type=float, default=1e-3)

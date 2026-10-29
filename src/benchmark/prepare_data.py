@@ -1,9 +1,9 @@
 """
 Download the three public spam datasets and merge them into one clean CSV.
 
-    python download_data.py
+    python -m src.benchmark.prepare_data
 
-Output: data/spam_all.csv with columns
+Output: data/processed/spam_all.csv with columns
     text    - cleaned message (subject + body for emails)
     label   - 1 = spam, 0 = ham (not spam)
     source  - sms | enron | spamassassin
@@ -25,9 +25,8 @@ from email import policy
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-from common import DATA_DIR, SEED, clean_text, html_to_text
-
-RAW_DIR = os.path.join(DATA_DIR, "raw")
+from ..config import DATA_RAW
+from .common import DATA_CSV, SEED, clean_text, html_to_text
 
 SMS_URLS = [
     "https://archive.ics.uci.edu/static/public/228/sms+spam+collection.zip",
@@ -46,8 +45,11 @@ SA_FILES = {  # file -> label
 
 
 def download(url, dest):
+    """Archives go to data/raw/<dataset>/ under the same names `main.py download`
+    uses, so the two pipelines share one copy of the raw data."""
     if os.path.exists(dest) and os.path.getsize(dest) > 0:
         return dest
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
     print(f"  downloading {url}")
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
     with urllib.request.urlopen(req, timeout=120) as r, open(dest + ".part", "wb") as f:
@@ -59,7 +61,7 @@ def download(url, dest):
 # ---------------------------------------------------------------- SMS
 def load_sms():
     for url in SMS_URLS:
-        dest = os.path.join(RAW_DIR, os.path.basename(url).replace("+", "_"))
+        dest = os.path.join(DATA_RAW, "sms", os.path.basename(url).replace("+", "_"))
         try:
             download(url, dest)
         except Exception as e:  # try the mirror
@@ -83,7 +85,7 @@ def load_sms():
 
 # ---------------------------------------------------------------- Enron
 def load_enron():
-    dest = download(ENRON_URL, os.path.join(RAW_DIR, "enron_spam_data.zip"))
+    dest = download(ENRON_URL, os.path.join(DATA_RAW, "enron", "enron_spam_data.zip"))
     df = pd.read_csv(dest, compression="zip")
     text = df["Subject"].fillna("") + "\n" + df["Message"].fillna("")
     return pd.DataFrame({"text": text, "label": (df["Spam/Ham"] == "spam").astype(int)})
@@ -112,7 +114,7 @@ def parse_raw_email(raw_bytes):
 def load_spamassassin():
     rows = []
     for fname, label in SA_FILES.items():
-        dest = download(SA_BASE + fname, os.path.join(RAW_DIR, fname))
+        dest = download(SA_BASE + fname, os.path.join(DATA_RAW, "spamassassin", fname))
         with tarfile.open(dest, "r:bz2") as tar:
             for m in tar.getmembers():
                 if not m.isfile() or os.path.basename(m.name) == "cmds":
@@ -126,7 +128,6 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--skip", nargs="*", default=[], help="sources to skip, e.g. --skip spamassassin")
     args = ap.parse_args()
-    os.makedirs(RAW_DIR, exist_ok=True)
 
     loaders = {"sms": load_sms, "enron": load_enron, "spamassassin": load_spamassassin}
     frames = []
@@ -162,9 +163,9 @@ def main():
         va, te = train_test_split(rest, test_size=0.50, stratify=g.loc[rest, "label"], random_state=SEED)
         df.loc[tr, "split"], df.loc[va, "split"], df.loc[te, "split"] = "train", "val", "test"
 
-    out = os.path.join(DATA_DIR, "spam_all.csv")
-    df.to_csv(out, index=False)
-    print(f"\nSaved {len(df)} messages -> {out}")
+    os.makedirs(os.path.dirname(DATA_CSV), exist_ok=True)
+    df.to_csv(DATA_CSV, index=False)
+    print(f"\nSaved {len(df)} messages -> {DATA_CSV}")
     print(pd.crosstab([df.source, df.split], df.label.map({0: "ham", 1: "spam"}), margins=True))
 
 
