@@ -13,3 +13,4 @@ for h in "" sms enron spamassassin; do
   python -m src.benchmark.train_distilbert ${h:+--holdout $h} "$@"
 done
 python -m src.benchmark.summarize
+python -m src.benchmark.marginal_cases

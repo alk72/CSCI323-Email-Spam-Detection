@@ -59,6 +59,7 @@ python -m src.benchmark.train_classical         # NB + SVM, BoW + TF-IDF
 python -m src.benchmark.train_mlp               # TF-IDF + MLP, a few minutes on a laptop CPU
 python -m src.benchmark.train_distilbert        # GPU recommended (free Colab T4 works)
 python -m src.benchmark.summarize               # one comparison table -> results/benchmark/results_summary.csv
+python -m src.benchmark.marginal_cases          # margin, attack and edge-case tests for all four models
 
 python -m src.benchmark.predict --model mlp "WINNER!! claim your prize now"   # demo
 ```
@@ -112,6 +113,8 @@ src/benchmark/train_classical.py  NB / SVM on the shared split
 src/benchmark/train_mlp.py      TF-IDF + MLP
 src/benchmark/train_distilbert.py  DistilBERT fine-tuning
 src/benchmark/summarize.py      collect all runs into one table
+src/benchmark/marginal_cases.py  margin, attack and edge-case tests for all four models
+src/benchmark/np_distilbert.py  NumPy DistilBERT forward pass, used when PyTorch is missing
 src/benchmark/predict.py        classify your own messages (demo)
 scripts/run_benchmark.sh        run the whole benchmark
 notebooks/colab_run.ipynb       run the benchmark on Google Colab
