@@ -10,7 +10,7 @@ import os
 import sys
 
 from . import common
-from .common import OUT_DIR, clean_text, run_name
+from .common import OUT_DIR, clean_text, distilbert_max_len, run_name
 
 
 def load_predictor(model, holdout):
@@ -26,10 +26,11 @@ def load_predictor(model, holdout):
     path = os.path.join(run, "best_model")
     tok = AutoTokenizer.from_pretrained(path)
     net = AutoModelForSequenceClassification.from_pretrained(path).eval()
+    max_len = distilbert_max_len(path)
 
     @torch.no_grad()
     def f(texts):
-        enc = tok(texts, truncation=True, max_length=256, padding=True, return_tensors="pt")
+        enc = tok(texts, truncation=True, max_length=max_len, padding=True, return_tensors="pt")
         return torch.softmax(net(**enc).logits, dim=-1)[:, 1].numpy()
     return f
 

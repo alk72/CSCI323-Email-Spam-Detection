@@ -64,7 +64,7 @@ python -m src.benchmark.marginal_cases          # margin, attack and edge-case t
 python -m src.benchmark.predict --model mlp "WINNER!! claim your prize now"   # demo
 ```
 
-Add `--holdout sms` (or `enron`, `spamassassin`) to any `train_*` command for the cross-dataset test: the model never sees that dataset during training and is then tested on all of it. `scripts/run_benchmark.sh` runs every combination, and `notebooks/colab_run.ipynb` does the same on Google Colab. Run `python -m tests.smoke_test_benchmark` for a quick check on fake data.
+Add `--holdout sms` (or `enron`, `spamassassin`) to any `train_*` command for the cross-dataset test: the model never sees that dataset during training and is then tested on all of it. `scripts/run_benchmark.sh` runs every combination, and `notebooks/colab_run.ipynb` runs the MLP and DistilBERT parts on Google Colab (the GPU-heavy ones). Run `python -m tests.smoke_test_benchmark` for a quick check on fake data.
 
 Each run saves to `results/benchmark/<model>_<experiment>/`: `metrics.json` (accuracy, precision, recall, F1, ROC-AUC, confusion counts, per-dataset breakdown), `history.csv` (loss and validation F1 per epoch) and the trained model.
 

@@ -17,11 +17,13 @@ Datasets
 import argparse
 import email
 import os
+import ssl
 import tarfile
 import urllib.request
 import zipfile
 from email import policy
 
+import certifi
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
@@ -52,7 +54,8 @@ def download(url, dest):
     os.makedirs(os.path.dirname(dest), exist_ok=True)
     print(f"  downloading {url}")
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    with urllib.request.urlopen(req, timeout=120) as r, open(dest + ".part", "wb") as f:
+    ctx = ssl.create_default_context(cafile=certifi.where())  # macOS Python may lack system CAs
+    with urllib.request.urlopen(req, timeout=120, context=ctx) as r, open(dest + ".part", "wb") as f:
         f.write(r.read())
     os.replace(dest + ".part", dest)
     return dest
@@ -135,15 +138,15 @@ def main():
         if name in args.skip:
             continue
         print(f"[{name}]")
-        try:
-            d = fn()
-        except Exception as e:
-            print(f"  ERROR loading {name}: {e}\n  (continuing without it)")
-            continue
+        # a failed source is fatal: a CSV silently missing one would skew every later run.
+        # Leave a source out on purpose with --skip.
+        d = fn()
         d["source"] = name
         print(f"  {len(d)} messages, {d.label.mean():.1%} spam")
         frames.append(d)
 
+    if not frames:
+        raise SystemExit("every source was skipped - nothing to prepare")
     df = pd.concat(frames, ignore_index=True)
     df["text"] = df["text"].astype(str).map(clean_text)
     df = df[df["text"].str.len() > 0]

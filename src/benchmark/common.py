@@ -148,3 +148,13 @@ def save_json(obj, path):
 
 def run_name(model, holdout):
     return f"{model}_{'indomain' if holdout is None else 'holdout-' + holdout}"
+
+
+def distilbert_max_len(model_dir, default=256):
+    """Token limit a DistilBERT checkpoint (<run>/best_model) was trained with, read
+    from <run>/metrics.json, so inference truncates exactly like training did."""
+    path = os.path.join(os.path.dirname(os.path.normpath(model_dir)), "metrics.json")
+    if not os.path.exists(path):
+        return default
+    with open(path) as f:
+        return int(json.load(f).get("max_len", default))

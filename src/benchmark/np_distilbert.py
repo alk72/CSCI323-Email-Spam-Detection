@@ -16,7 +16,11 @@ class NpDistilBert:
     def __init__(self, path, max_len=256):
         self.w = load_file(f"{path}/model.safetensors")
         self.tok = Tokenizer.from_file(f"{path}/tokenizer.json")
+        # save_pretrained can store padding in tokenizer.json; logit() pads per batch itself
+        # and takes len(ids) as the real length, so pre-padded ids would be attended to
+        self.tok.no_padding()
         self.tok.enable_truncation(max_len)
+        self.tok.no_padding()  # tokenizer.json pads to the batch; padding would count as real tokens
         self.max_len = max_len
 
     def _lin(self, x, name):

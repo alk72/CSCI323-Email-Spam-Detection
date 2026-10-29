@@ -23,7 +23,8 @@ import pandas as pd
 
 from ..adversarial import good_word_attack, obfuscate_text, top_ham_words, top_spam_words
 from ..models import build_pipeline
-from .common import OUT_DIR, SEED, TfidfFeatures, clean_text, load_data, make_splits, source_balanced_probs
+from .common import (OUT_DIR, SEED, TfidfFeatures, clean_text, distilbert_max_len, load_data,
+                     make_splits, source_balanced_probs)
 from .train_classical import classical_clean
 from .train_mlp import train_mlp
 
@@ -49,8 +50,42 @@ EDGE_CASES.append(("Spam after a long harmless intro", 1,
                    _INTRO * 6 + "WINNER!! You have won a FREE iPhone, click https://win.example.com to claim your prize now"))
 
 
+def load_distilbert():
+    """The trained DistilBERT as a function texts -> spam log-odds. Loaded before the
+    other models are trained, so a missing checkpoint fails fast."""
+    if not os.path.isdir(DISTILBERT_DIR):
+        raise SystemExit(f"{DISTILBERT_DIR} not found - run `python -m src.benchmark.train_distilbert` "
+                         "first, or point DISTILBERT_DIR at a trained best_model folder")
+    max_len = distilbert_max_len(DISTILBERT_DIR)
+    try:
+        import torch
+        from transformers import AutoModelForSequenceClassification, AutoTokenizer
+    except ImportError:  # no PyTorch: fall back to a NumPy forward pass
+        try:
+            from .np_distilbert import NpDistilBert
+        except ImportError as e:
+            raise SystemExit(f"DistilBERT needs PyTorch + Transformers (pip install -r requirements-neural.txt) "
+                             f"or, for the NumPy fallback, safetensors + tokenizers ({e})")
+        return NpDistilBert(DISTILBERT_DIR, max_len).logit
+
+    tok = AutoTokenizer.from_pretrained(DISTILBERT_DIR)
+    net = AutoModelForSequenceClassification.from_pretrained(DISTILBERT_DIR).eval()
+
+    @torch.no_grad()
+    def db_logit(t, batch=32):
+        out = []
+        t = list(t)
+        for s in range(0, len(t), batch):
+            lg = net(**tok(t[s:s + batch], truncation=True, max_length=max_len, padding=True,
+                           return_tensors="pt")).logits
+            out.append((lg[:, 1] - lg[:, 0]).numpy())
+        return np.concatenate(out)
+    return db_logit
+
+
 def build_models(train, val):
     """Each model as a function texts -> spam log-odds."""
+    db_logit = load_distilbert()
     models = {}
     tr_clean = train.text.map(classical_clean)
     for m in ("nb", "svm"):
@@ -70,25 +105,6 @@ def build_models(train, val):
         p = np.clip(mlp.predict_proba(feats.transform(list(t)))[:, 1], 1e-7, 1 - 1e-7)
         return np.log(p / (1 - p))
     models["MLP"] = mlp_logit
-
-    try:
-        import torch
-        from transformers import AutoModelForSequenceClassification, AutoTokenizer
-        tok = AutoTokenizer.from_pretrained(DISTILBERT_DIR)
-        net = AutoModelForSequenceClassification.from_pretrained(DISTILBERT_DIR).eval()
-
-        @torch.no_grad()
-        def db_logit(t, batch=32):
-            out = []
-            t = list(t)
-            for s in range(0, len(t), batch):
-                lg = net(**tok(t[s:s + batch], truncation=True, max_length=256, padding=True,
-                               return_tensors="pt")).logits
-                out.append((lg[:, 1] - lg[:, 0]).numpy())
-            return np.concatenate(out)
-    except ImportError:  # no PyTorch: fall back to a NumPy forward pass
-        from .np_distilbert import NpDistilBert
-        db_logit = NpDistilBert(DISTILBERT_DIR).logit
     models["DistilBERT"] = db_logit
     return models, svm
 
