@@ -9,6 +9,7 @@ import argparse
 import os
 import sys
 
+from . import common
 from .common import OUT_DIR, clean_text, run_name
 
 
@@ -16,6 +17,7 @@ def load_predictor(model, holdout):
     run = os.path.join(OUT_DIR, run_name(model, holdout))
     if model == "mlp":
         import joblib
+        sys.modules.setdefault("common", common)  # models saved before the move to src/benchmark
         bundle = joblib.load(os.path.join(run, "model.joblib"))
         return lambda texts: bundle["mlp"].predict_proba(bundle["features"].transform(texts))[:, 1]
 
